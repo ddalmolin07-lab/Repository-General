@@ -1,0 +1,109 @@
+import { useEffect, useState } from 'react'
+
+function formatDate(iso) {
+  if (!iso) return ''
+  return new Date(iso).toLocaleString('it-IT', {
+    day: 'numeric',
+    month: 'short',
+    year: 'numeric',
+    hour: '2-digit',
+    minute: '2-digit',
+  })
+}
+
+export default function EscalationDetail({ request, onChangeStatus, onSendReply, busy }) {
+  const [reply, setReply] = useState('')
+  const [focused, setFocused] = useState(false)
+
+  useEffect(() => {
+    setReply('')
+    setFocused(false)
+  }, [request?.id])
+
+  if (!request) {
+    return (
+      <div className="detail-panel surface-detail">
+        <div className="detail-empty">Seleziona un'escalation per vedere i dettagli</div>
+      </div>
+    )
+  }
+
+  const isLavorazione = request.stato === 'in_lavorazione'
+  const canSend = reply.trim().length > 0 && !busy
+
+  return (
+    <div className="detail-panel surface-detail">
+      <div className="detail-header">
+        <div className="detail-header-left">
+          <h3>{request.oggetto_email}</h3>
+          <div className="detail-meta">
+            <span>{request.mittente_email}</span>
+            <span>·</span>
+            <span>{formatDate(request.timestamp_arrivo)}</span>
+            {request.secondo_contatto && (
+              <>
+                <span>·</span>
+                <span className="secondo-badge">2° contatto</span>
+              </>
+            )}
+          </div>
+        </div>
+        <div className="detail-actions">
+          {!isLavorazione && (
+            <button
+              className="btn status"
+              disabled={busy}
+              onClick={() => onChangeStatus('in_lavorazione')}
+            >
+              → In lavorazione
+            </button>
+          )}
+          <button
+            className="btn"
+            disabled={busy}
+            onClick={() => onChangeStatus('risolto')}
+          >
+            ✓ Segna risolto
+          </button>
+        </div>
+      </div>
+
+      <div className="detail-body">
+        <div className="email-bubble">
+          <div className="email-bubble-header">
+            <span className="email-from">{request.mittente_email}</span>
+            <span className="email-date">{formatDate(request.timestamp_arrivo)}</span>
+          </div>
+          <div className="email-body">{request.testo_email}</div>
+        </div>
+
+        <div className={`reply-box ${focused ? 'focused' : ''}`}>
+          <div className="reply-box-header">
+            <span className="reply-box-label">Risposta</span>
+            <span className="reply-box-recipient">Verrà inviata a {request.mittente_email}</span>
+          </div>
+          <textarea
+            className="reply-textarea"
+            placeholder="Scrivi la risposta da inviare al cliente…"
+            value={reply}
+            onChange={(e) => setReply(e.target.value)}
+            onFocus={() => setFocused(true)}
+            onBlur={() => setFocused(false)}
+          />
+          <div className="reply-footer">
+            <span className="reply-hint">
+              La risposta verrà inviata via Gmail e lo stato passerà automaticamente a Risolto
+            </span>
+            <button
+              className="btn primary"
+              disabled={!canSend}
+              onClick={() => onSendReply(reply)}
+            >
+              {busy ? 'Invio…' : 'Invia risposta'}
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  )
+}

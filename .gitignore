@@ -1,0 +1,57 @@
+# OS
+.DS_Store
+Thumbs.db
+
+# ── SECRETS — non committare mai ──
+.mcp.json
+.env
+.env.*
+!.env.example
+*.key
+credentials*.json
+
+# ── Node / Vite ──
+node_modules/
+dist/
+dist-ssr/
+*.local
+.vite/
+
+# ── Logs ──
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+*.log
+
+# ── Editor / tooling ──
+.vscode/*
+!.vscode/extensions.json
+.idea/
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?
+
+# ── Test / screenshots / playwright runtime ──
+.playwright-mcp/
+playwright-report/
+test-results/
+
+# ── Screenshot temporanei generati in sessione ──
+login-page.png
+signup-page.png
+forgot-page.png
+account-section.png
+ai-section.png
+integrazioni-section.png
+notifiche-section.png
+Screenshot*.png
+
+# ── Claude / superpowers session caches ──
+.superpowers/
+.agents/
+
+# ── Claude project settings (local) ──
+.claude/settings.local.json
+.claude/skills/

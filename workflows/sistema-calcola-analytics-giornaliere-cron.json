@@ -1,0 +1,207 @@
+{
+  "name": "Sistema - Calcola Analytics Giornaliere - Cron",
+  "nodes": [
+    {
+      "id": "sticky-note-main",
+      "name": "Note Workflow",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [240, 80],
+      "parameters": {
+        "content": "## Sistema - Calcola Analytics Giornaliere - Cron\n\n**Scopo:** Legge le richieste del giorno dal tab `requests` e scrive un record aggregato in `analytics_daily`.\n\n**Trigger:** Cron ogni giorno alle 23:30\n\n**Input atteso (tab `requests`):**\n`id | timestamp_arrivo | mittente_email | oggetto_email | testo_email | tipo | stato | timestamp_risolto | risposta_inviata | secondo_contatto`\n\n**Output prodotto (tab `analytics_daily`):**\n`data | totale_richieste | ai_handled | escalated | tempo_medio_risposta_h`\n\n**Logica:**\n- Filtra righe con `timestamp_arrivo` che inizia con la data odierna (YYYY-MM-DD)\n- `tempo_medio_risposta_h`: media ore tra arrivo e risoluzione, solo per `tipo=escalated` + `stato=risolto`\n- Usa `appendOrUpdate` con chiave `data` → rieseguibile senza creare duplicati\n\n**Credenziale:** Google Sheets OAuth2 API (ID: zr5BaMYSNlfECQZg)\n**Document ID:** 1NhXPI3Prqu3bmMERZGuUaPSdTupSZroAOR1AUji2k30\n\n**Ultima modifica:** 2026-04-30",
+        "height": 220,
+        "width": 780,
+        "color": 5
+      }
+    },
+    {
+      "id": "node-schedule-trigger",
+      "name": "Trigger Cron 23:30",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
+      "position": [240, 360],
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "cronExpression",
+              "expression": "30 23 * * *"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "node-read-requests",
+      "name": "Leggi Richieste da Sheets",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.5,
+      "position": [460, 360],
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "zr5BaMYSNlfECQZg",
+          "name": "Google Sheets OAuth2 API"
+        }
+      },
+      "parameters": {
+        "resource": "sheet",
+        "operation": "readAllRows",
+        "documentId": {
+          "__rl": true,
+          "value": "1NhXPI3Prqu3bmMERZGuUaPSdTupSZroAOR1AUji2k30",
+          "mode": "id"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "requests",
+          "mode": "name"
+        },
+        "options": {}
+      }
+    },
+    {
+      "id": "node-calcola-aggregati",
+      "name": "Calcola Aggregati del Giorno",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [680, 360],
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "// Calcola la data odierna in formato YYYY-MM-DD\nconst today = $now.toFormat('yyyy-MM-dd');\n\nconst allRows = $input.all();\n\n// Filtra righe il cui timestamp_arrivo appartiene a oggi\nconst todayRows = allRows.filter(item => {\n  const ts = item.json.timestamp_arrivo;\n  if (!ts) return false;\n  return String(ts).startsWith(today);\n});\n\nconst totale_richieste = todayRows.length;\nconst ai_handled = todayRows.filter(r => r.json.tipo === 'ai_handled').length;\nconst escalated = todayRows.filter(r => r.json.tipo === 'escalated').length;\n\n// Media ore di risposta per escalation risolte oggi\nconst escalatedRisolti = todayRows.filter(r =>\n  r.json.tipo === 'escalated' &&\n  r.json.stato === 'risolto' &&\n  r.json.timestamp_risolto\n);\n\nlet tempo_medio_risposta_h = 0;\nif (escalatedRisolti.length > 0) {\n  const totalMs = escalatedRisolti.reduce((sum, r) => {\n    const arrivo = new Date(r.json.timestamp_arrivo).getTime();\n    const risolto = new Date(r.json.timestamp_risolto).getTime();\n    return sum + (risolto - arrivo);\n  }, 0);\n  const avgMs = totalMs / escalatedRisolti.length;\n  // Arrotonda a 2 decimali\n  tempo_medio_risposta_h = Math.round((avgMs / (1000 * 60 * 60)) * 100) / 100;\n}\n\nreturn [{\n  json: {\n    data: today,\n    totale_richieste,\n    ai_handled,\n    escalated,\n    tempo_medio_risposta_h\n  }\n}];"
+      }
+    },
+    {
+      "id": "node-write-analytics",
+      "name": "Scrivi Analytics su Sheets",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.5,
+      "position": [900, 360],
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "zr5BaMYSNlfECQZg",
+          "name": "Google Sheets OAuth2 API"
+        }
+      },
+      "parameters": {
+        "resource": "sheet",
+        "operation": "appendOrUpdate",
+        "documentId": {
+          "__rl": true,
+          "value": "1NhXPI3Prqu3bmMERZGuUaPSdTupSZroAOR1AUji2k30",
+          "mode": "id"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "analytics_daily",
+          "mode": "name"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "data": "={{ $json.data }}",
+            "totale_richieste": "={{ $json.totale_richieste }}",
+            "ai_handled": "={{ $json.ai_handled }}",
+            "escalated": "={{ $json.escalated }}",
+            "tempo_medio_risposta_h": "={{ $json.tempo_medio_risposta_h }}"
+          },
+          "matchingColumns": ["data"],
+          "schema": [
+            {
+              "id": "data",
+              "displayName": "data",
+              "required": false,
+              "defaultMatch": true,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "removed": false
+            },
+            {
+              "id": "totale_richieste",
+              "displayName": "totale_richieste",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "removed": false
+            },
+            {
+              "id": "ai_handled",
+              "displayName": "ai_handled",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "removed": false
+            },
+            {
+              "id": "escalated",
+              "displayName": "escalated",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "removed": false
+            },
+            {
+              "id": "tempo_medio_risposta_h",
+              "displayName": "tempo_medio_risposta_h",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "removed": false
+            }
+          ]
+        },
+        "options": {}
+      }
+    }
+  ],
+  "connections": {
+    "Trigger Cron 23:30": {
+      "main": [
+        [
+          {
+            "node": "Leggi Richieste da Sheets",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Leggi Richieste da Sheets": {
+      "main": [
+        [
+          {
+            "node": "Calcola Aggregati del Giorno",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Calcola Aggregati del Giorno": {
+      "main": [
+        [
+          {
+            "node": "Scrivi Analytics su Sheets",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1",
+    "saveManualExecutions": true,
+    "callerPolicy": "workflowsFromSameOwner"
+  },
+  "tags": [],
+  "pinData": {}
+}

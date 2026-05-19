@@ -1,0 +1,7 @@
+0000000000000000000000000000000000000000 c0b3b91cc16a59321cf03414ac33748671116a98 Daniele Dal Molin <daniele@MacBook-Pro-di-Daniele.local> 1779190370 +0200	commit (initial): chore: scaffold Vite + React for Filtro K dashboard
+c0b3b91cc16a59321cf03414ac33748671116a98 60f282935ac3097f3f5b8511e836240fb85a5809 Daniele Dal Molin <daniele@MacBook-Pro-di-Daniele.local> 1779190394 +0200	commit: chore: configure Tailwind CSS and Vitest
+60f282935ac3097f3f5b8511e836240fb85a5809 6add547cff9edca1031a1d9d6737681192e0bea7 Daniele Dal Molin <daniele@MacBook-Pro-di-Daniele.local> 1779190432 +0200	commit: feat: design tokens, triple-orb bg, noise overlay, surface classes
+6add547cff9edca1031a1d9d6737681192e0bea7 e512f75ef9ad5057c717747d41598f2e3e0c8d77 Daniele Dal Molin <daniele@MacBook-Pro-di-Daniele.local> 1779190473 +0200	commit: feat: KpiBar with logo, 4 KPI pill placeholders and avatar
+e512f75ef9ad5057c717747d41598f2e3e0c8d77 b987dffb277a30da2ace3bf681bff7bbdadf6049 Daniele Dal Molin <daniele@MacBook-Pro-di-Daniele.local> 1779190508 +0200	commit: feat: Sidebar with 4 nav items and escalation badge
+b987dffb277a30da2ace3bf681bff7bbdadf6049 429f86ad67bdeb51161da10b4e1981bf4fac2d2d Daniele Dal Molin <daniele@MacBook-Pro-di-Daniele.local> 1779190524 +0200	commit: feat: placeholder pages for all 4 sections
+429f86ad67bdeb51161da10b4e1981bf4fac2d2d d4aa90ff0cba386dda588b62c10643f5c47b0606 Daniele Dal Molin <daniele@MacBook-Pro-di-Daniele.local> 1779190564 +0200	commit: feat: wire router and assemble app shell — Phase 1 complete
