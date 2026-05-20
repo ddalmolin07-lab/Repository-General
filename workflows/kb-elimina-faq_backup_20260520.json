@@ -1,0 +1,18 @@
+{
+  "id": "gHkLeXncpESPpHck",
+  "name": "KB - Elimina FAQ - Webhook",
+  "active": false,
+  "nodes": [
+    { "id": "webhook-kb-delete", "name": "Webhook KB Delete", "type": "n8n-nodes-base.webhook", "typeVersion": 2.1, "position": [240, 300], "parameters": { "httpMethod": "DELETE", "path": "kb/delete", "responseMode": "responseNode" }, "onError": "continueRegularOutput", "webhookId": "5334897f-ff00-452f-a379-d83b0e059b7e" },
+    { "id": "controlla-api-key", "name": "Controlla API Key", "type": "n8n-nodes-base.if", "typeVersion": 2, "position": [480, 300], "parameters": { "conditions": { "options": { "caseSensitive": true, "leftValue": "", "typeValidation": "strict" }, "conditions": [{ "id": "cond-api-key", "leftValue": "={{ $json.headers[\"x-api-key\"] }}", "rightValue": "fk-kb-api-2026", "operator": { "type": "string", "operation": "equals" } }], "combinator": "and" } } },
+    { "id": "elimina-voce-kb", "name": "Elimina Voce KB", "type": "n8n-nodes-base.googleSheets", "typeVersion": 4.4, "position": [720, 200], "credentials": { "googleSheetsOAuth2Api": { "id": "zr5BaMYSNlfECQZg", "name": "Google Sheets OAuth2 API" } }, "parameters": { "operation": "delete", "documentId": { "__rl": true, "value": "1w80b1u9P7bpq1AqcCiEskE-4hEJCRf2ilJdcxKAIBMc", "mode": "id" }, "sheetName": { "__rl": true, "value": "Foglio1", "mode": "name" }, "toDelete": "rows", "startIndex": "={{ $json.body.id - 1 }}", "numberToDelete": 1 } },
+    { "id": "risposta-ok", "name": "Risposta Eliminazione OK", "type": "n8n-nodes-base.respondToWebhook", "typeVersion": 1.1, "position": [960, 200], "parameters": { "respondWith": "json", "responseBody": "={ \"success\": true, \"message\": \"FAQ eliminata con successo\" }" } },
+    { "id": "risposta-401", "name": "Risposta Non Autorizzato", "type": "n8n-nodes-base.respondToWebhook", "typeVersion": 1.1, "position": [720, 420], "parameters": { "respondWith": "json", "responseBody": "={ \"success\": false, \"error\": \"Unauthorized\" }", "options": { "responseCode": 401 } } }
+  ],
+  "connections": {
+    "Webhook KB Delete": { "main": [[{ "node": "Controlla API Key", "type": "main", "index": 0 }]] },
+    "Controlla API Key": { "main": [[{ "node": "Elimina Voce KB", "type": "main", "index": 0 }], [{ "node": "Risposta Non Autorizzato", "type": "main", "index": 0 }]] },
+    "Elimina Voce KB": { "main": [[{ "node": "Risposta Eliminazione OK", "type": "main", "index": 0 }]] }
+  },
+  "settings": { "executionOrder": "v1" }
+}

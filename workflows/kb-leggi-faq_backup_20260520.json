@@ -1,0 +1,20 @@
+{
+  "id": "C3XGpS0Dg0FuvK2m",
+  "name": "KB - Leggi FAQ - Webhook",
+  "active": false,
+  "nodes": [
+    { "id": "webhook-kb-list", "name": "Webhook KB List", "type": "n8n-nodes-base.webhook", "typeVersion": 2.1, "position": [240, 300], "parameters": { "httpMethod": "GET", "path": "kb/list", "responseMode": "responseNode" }, "webhookId": "1a46f102-7db6-494f-9e33-8d4d7c4451ba" },
+    { "id": "controlla-api-key", "name": "Controlla API Key", "type": "n8n-nodes-base.if", "typeVersion": 2, "position": [460, 300], "parameters": { "conditions": { "options": { "caseSensitive": true, "leftValue": "", "typeValidation": "strict" }, "conditions": [{ "id": "cond-1", "leftValue": "={{ $json.headers[\"x-api-key\"] }}", "rightValue": "fk-kb-api-2026", "operator": { "type": "string", "operation": "equals" } }], "combinator": "and" } } },
+    { "id": "leggi-tutte-le-faq", "name": "Leggi Tutte le FAQ", "type": "n8n-nodes-base.googleSheets", "typeVersion": 4.4, "position": [680, 200], "parameters": { "operation": "read", "documentId": { "__rl": true, "value": "1w80b1u9P7bpq1AqcCiEskE-4hEJCRf2ilJdcxKAIBMc", "mode": "id" }, "sheetName": { "__rl": true, "value": "Foglio1", "mode": "name" } }, "credentials": { "googleSheetsOAuth2Api": { "id": "zr5BaMYSNlfECQZg", "name": "Google Sheets OAuth2 API" } } },
+    { "id": "formatta-risposta-faq", "name": "Formatta Risposta FAQ", "type": "n8n-nodes-base.code", "typeVersion": 2, "position": [900, 200], "parameters": { "jsCode": "const items = $input.all().map((item, index) => ({\n  id: item.json.row_number || (index + 2),\n  domanda: item.json.Domanda || '',\n  risposta: item.json.Risposta || ''\n}));\nreturn [{ json: { success: true, data: items } }];", "mode": "runOnceForAllItems" } },
+    { "id": "risposta-faq", "name": "Risposta FAQ", "type": "n8n-nodes-base.respondToWebhook", "typeVersion": 1.1, "position": [1120, 200], "parameters": { "respondWith": "firstIncomingItem" } },
+    { "id": "risposta-non-autorizzato", "name": "Risposta Non Autorizzato", "type": "n8n-nodes-base.respondToWebhook", "typeVersion": 1.1, "position": [680, 420], "parameters": { "respondWith": "json", "responseBody": "{\"success\": false, \"error\": \"Unauthorized\"}", "options": { "responseCode": 401 } } }
+  ],
+  "connections": {
+    "Webhook KB List": { "main": [[{ "node": "Controlla API Key", "type": "main", "index": 0 }]] },
+    "Controlla API Key": { "main": [[{ "node": "Leggi Tutte le FAQ", "type": "main", "index": 0 }], [{ "node": "Risposta Non Autorizzato", "type": "main", "index": 0 }]] },
+    "Leggi Tutte le FAQ": { "main": [[{ "node": "Formatta Risposta FAQ", "type": "main", "index": 0 }]] },
+    "Formatta Risposta FAQ": { "main": [[{ "node": "Risposta FAQ", "type": "main", "index": 0 }]] }
+  },
+  "settings": { "executionOrder": "v1" }
+}
