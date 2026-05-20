@@ -4,24 +4,30 @@
 -- ============================================================
 
 -- ------------------------------------------------------------
--- TABELLE
+-- email_requests — modello "Message-ID + scrittori autorizzati"
+-- id = Message-ID Gmail (TEXT). Scritture solo da n8n (service_role)
+-- o via Postgres function SECURITY DEFINER (claim_request).
 -- ------------------------------------------------------------
 
-CREATE TABLE IF NOT EXISTS email_requests (
-  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+DROP TABLE IF EXISTS email_requests CASCADE;
+
+CREATE TABLE email_requests (
+  id TEXT PRIMARY KEY,                    -- Message-ID Gmail
   timestamp_arrivo TIMESTAMPTZ NOT NULL DEFAULT NOW(),
   mittente_email TEXT NOT NULL,
   oggetto_email TEXT NOT NULL,
   testo_email TEXT NOT NULL,
-  tipo TEXT NOT NULL CHECK (tipo IN ('ai_handled', 'escalated')),
-  stato TEXT NOT NULL DEFAULT 'in_attesa'
-    CHECK (stato IN ('risolto', 'in_attesa', 'in_lavorazione')),
+  stato TEXT NOT NULL CHECK (stato IN (
+    'risolta_ai','in_attesa_addetto','presa_in_carico','risolta_addetto','errore'
+  )),
   timestamp_risolto TIMESTAMPTZ,
   risposta_inviata TEXT,
-  secondo_contatto BOOLEAN DEFAULT FALSE,
-  created_at TIMESTAMPTZ DEFAULT NOW(),
   updated_at TIMESTAMPTZ DEFAULT NOW()
 );
+
+-- ------------------------------------------------------------
+-- analytics_daily / app_settings (invariate)
+-- ------------------------------------------------------------
 
 CREATE TABLE IF NOT EXISTS analytics_daily (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -63,29 +69,47 @@ CREATE TRIGGER trg_app_settings_updated_at
   FOR EACH ROW EXECUTE FUNCTION update_updated_at();
 
 -- ------------------------------------------------------------
+-- Postgres function claim_request
+-- Unico canale autorizzato per la transizione
+-- in_attesa_addetto -> presa_in_carico dalla dashboard.
+-- ------------------------------------------------------------
+
+CREATE OR REPLACE FUNCTION claim_request(p_id TEXT)
+RETURNS email_requests
+LANGUAGE sql
+SECURITY DEFINER
+SET search_path = public
+AS $$
+  UPDATE email_requests
+     SET stato = 'presa_in_carico'
+   WHERE id = p_id
+     AND stato = 'in_attesa_addetto'
+  RETURNING *;
+$$;
+
+REVOKE ALL ON FUNCTION claim_request(TEXT) FROM PUBLIC;
+GRANT EXECUTE ON FUNCTION claim_request(TEXT) TO authenticated;
+
+-- ------------------------------------------------------------
 -- RLS (Row Level Security)
+-- email_requests: SELECT per authenticated, nessun UPDATE diretto.
+-- Le scritture passano solo da service_role (n8n) o da claim_request.
 -- ------------------------------------------------------------
 
 ALTER TABLE email_requests ENABLE ROW LEVEL SECURITY;
 ALTER TABLE analytics_daily ENABLE ROW LEVEL SECURITY;
 ALTER TABLE app_settings ENABLE ROW LEVEL SECURITY;
 
--- email_requests: utenti autenticati leggono e aggiornano
--- service_role bypassa RLS per default (usato da n8n)
 DROP POLICY IF EXISTS "auth_read_requests" ON email_requests;
 CREATE POLICY "auth_read_requests" ON email_requests
   FOR SELECT TO authenticated USING (true);
 
-DROP POLICY IF EXISTS "auth_update_requests" ON email_requests;
-CREATE POLICY "auth_update_requests" ON email_requests
-  FOR UPDATE TO authenticated USING (true) WITH CHECK (true);
+-- Policy UPDATE per client authenticated rimossa: niente UPDATE liberi dal client.
 
--- analytics_daily: solo lettura per autenticati
 DROP POLICY IF EXISTS "auth_read_analytics" ON analytics_daily;
 CREATE POLICY "auth_read_analytics" ON analytics_daily
   FOR SELECT TO authenticated USING (true);
 
--- app_settings: ogni utente accede solo alla propria riga
 DROP POLICY IF EXISTS "users_own_settings" ON app_settings;
 CREATE POLICY "users_own_settings" ON app_settings
   FOR ALL TO authenticated
@@ -109,8 +133,8 @@ CREATE POLICY "auth_read_attachments" ON storage.objects
 -- INDICI (performance)
 -- ------------------------------------------------------------
 
-CREATE INDEX IF NOT EXISTS idx_email_requests_tipo_stato
-  ON email_requests(tipo, stato);
+CREATE INDEX IF NOT EXISTS idx_email_requests_stato
+  ON email_requests(stato);
 
 CREATE INDEX IF NOT EXISTS idx_email_requests_timestamp_arrivo
   ON email_requests(timestamp_arrivo DESC);
@@ -119,15 +143,21 @@ CREATE INDEX IF NOT EXISTS idx_analytics_daily_data
   ON analytics_daily(data DESC);
 
 -- ------------------------------------------------------------
--- DATI DI TEST (solo per ambiente TEST — rimuovere prima di PROD)
+-- DATI DI TEST (solo TEST — rimuovere prima di PROD)
 -- ------------------------------------------------------------
 
-INSERT INTO email_requests (mittente_email, oggetto_email, testo_email, tipo, stato, secondo_contatto)
+INSERT INTO email_requests (id, mittente_email, oggetto_email, testo_email, stato)
 VALUES
-  ('mario.rossi@email.com', 'Problema con il filtro modello X200', 'Buongiorno, ho acquistato il filtro X200 tre settimane fa e continua a perdere da un lato. Ho già cambiato la guarnizione ma il problema persiste. Potete aiutarmi?', 'escalated', 'in_attesa', false),
-  ('giulia.bianchi@gmail.com', 'Compatibilità filtro con cappa Elica', 'Salve, vorrei sapere se il vostro filtro universale è compatibile con la mia cappa Elica modello BELT 60. Grazie', 'escalated', 'in_lavorazione', true),
-  ('luca.verdi@hotmail.com', 'Ordine #4521 — spedizione non ricevuta', 'Ho effettuato un ordine il 12 maggio ma il corriere dice che il pacco è fermo in magazzino da 4 giorni. Potete verificare?', 'escalated', 'in_attesa', false)
-ON CONFLICT DO NOTHING;
+  ('<seed-001@test.local>', 'mario.rossi@email.com',  'Problema con il filtro modello X200',
+   'Buongiorno, ho acquistato il filtro X200 tre settimane fa e continua a perdere da un lato. Ho già cambiato la guarnizione ma il problema persiste. Potete aiutarmi?',
+   'in_attesa_addetto'),
+  ('<seed-002@test.local>', 'giulia.bianchi@gmail.com', 'Compatibilità filtro con cappa Elica',
+   'Salve, vorrei sapere se il vostro filtro universale è compatibile con la mia cappa Elica modello BELT 60. Grazie',
+   'presa_in_carico'),
+  ('<seed-003@test.local>', 'luca.verdi@hotmail.com', 'Ordine #4521 — spedizione non ricevuta',
+   'Ho effettuato un ordine il 12 maggio ma il corriere dice che il pacco è fermo in magazzino da 4 giorni. Potete verificare?',
+   'in_attesa_addetto')
+ON CONFLICT (id) DO NOTHING;
 
 INSERT INTO analytics_daily (data, totale_richieste, ai_handled, escalated, tempo_medio_risposta_h)
 VALUES
