@@ -1,0 +1,18 @@
+{
+  "id": "Vwn0SIStFQ8jH43u",
+  "name": "KB - Elimina FAQ - Webhook_supabase",
+  "active": false,
+  "nodes": [
+    { "id": "webhook-kb-delete", "name": "Webhook KB Delete", "type": "n8n-nodes-base.webhook", "typeVersion": 2.1, "position": [240, 300], "parameters": { "httpMethod": "DELETE", "path": "kb/delete", "responseMode": "responseNode" }, "onError": "continueRegularOutput" },
+    { "id": "controlla-api-key", "name": "Controlla API Key", "type": "n8n-nodes-base.if", "typeVersion": 2, "position": [480, 300], "parameters": { "conditions": { "options": { "caseSensitive": true, "leftValue": "", "typeValidation": "strict" }, "conditions": [{ "id": "cond-api-key", "leftValue": "={{ $json.headers[\"x-api-key\"] }}", "rightValue": "fk-kb-api-2026", "operator": { "type": "string", "operation": "equals" } }], "combinator": "and" } } },
+    { "id": "elimina-faq-supabase", "name": "Elimina FAQ Supabase", "type": "n8n-nodes-base.supabase", "typeVersion": 1, "position": [720, 200], "parameters": { "resource": "row", "operation": "delete", "tableId": "kb_faq", "filterType": "manual", "matchType": "allFilters", "filters": { "conditions": [{ "keyName": "id", "condition": "eq", "keyValue": "={{ $json.body.id }}" }] } }, "credentials": { "supabaseApi": { "id": "6exE1PGVlPWOLmzf", "name": "Supabase account" } } },
+    { "id": "risposta-ok", "name": "Risposta Eliminazione OK", "type": "n8n-nodes-base.respondToWebhook", "typeVersion": 1.1, "position": [960, 200], "parameters": { "respondWith": "json", "responseBody": "={\"success\": true, \"message\": \"FAQ eliminata con successo\"}" } },
+    { "id": "risposta-401", "name": "Risposta Non Autorizzato", "type": "n8n-nodes-base.respondToWebhook", "typeVersion": 1.1, "position": [720, 420], "parameters": { "respondWith": "json", "responseBody": "={\"success\": false, \"error\": \"Unauthorized\"}", "options": { "responseCode": 401 } } }
+  ],
+  "connections": {
+    "Webhook KB Delete": { "main": [[{ "node": "Controlla API Key", "type": "main", "index": 0 }]] },
+    "Controlla API Key": { "main": [[{ "node": "Elimina FAQ Supabase", "type": "main", "index": 0 }], [{ "node": "Risposta Non Autorizzato", "type": "main", "index": 0 }]] },
+    "Elimina FAQ Supabase": { "main": [[{ "node": "Risposta Eliminazione OK", "type": "main", "index": 0 }]] }
+  },
+  "settings": { "executionOrder": "v1" }
+}

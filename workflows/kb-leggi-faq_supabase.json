@@ -1,0 +1,20 @@
+{
+  "id": "hC2atTQc72XprAUq",
+  "name": "KB - Leggi FAQ - Webhook_supabase",
+  "active": false,
+  "nodes": [
+    { "id": "webhook-kb-list", "name": "Webhook KB List", "type": "n8n-nodes-base.webhook", "typeVersion": 2.1, "position": [240, 300], "parameters": { "httpMethod": "GET", "path": "kb/list", "responseMode": "responseNode" } },
+    { "id": "controlla-api-key", "name": "Controlla API Key", "type": "n8n-nodes-base.if", "typeVersion": 2, "position": [460, 300], "parameters": { "conditions": { "options": { "caseSensitive": true, "leftValue": "", "typeValidation": "strict" }, "conditions": [{ "id": "cond-1", "leftValue": "={{ $json.headers[\"x-api-key\"] }}", "rightValue": "fk-kb-api-2026", "operator": { "type": "string", "operation": "equals" } }], "combinator": "and" } } },
+    { "id": "leggi-faq-supabase", "name": "Leggi FAQ Supabase", "type": "n8n-nodes-base.supabase", "typeVersion": 1, "position": [680, 200], "parameters": { "resource": "row", "operation": "getAll", "tableId": "kb_faq", "returnAll": true, "filterType": "none" }, "credentials": { "supabaseApi": { "id": "6exE1PGVlPWOLmzf", "name": "Supabase account" } } },
+    { "id": "formatta-risposta-faq", "name": "Formatta Risposta FAQ", "type": "n8n-nodes-base.code", "typeVersion": 2, "position": [900, 200], "parameters": { "jsCode": "const items = $input.all().map((item) => ({\n  id: item.json.id,\n  domanda: item.json.domanda || '',\n  risposta: item.json.risposta || '',\n  categoria: item.json.categoria || null,\n  stato: item.json.stato || null\n}));\nreturn [{ json: { success: true, data: items } }];", "mode": "runOnceForAllItems" } },
+    { "id": "risposta-faq", "name": "Risposta FAQ", "type": "n8n-nodes-base.respondToWebhook", "typeVersion": 1.1, "position": [1120, 200], "parameters": { "respondWith": "firstIncomingItem" } },
+    { "id": "risposta-non-autorizzato", "name": "Risposta Non Autorizzato", "type": "n8n-nodes-base.respondToWebhook", "typeVersion": 1.1, "position": [680, 420], "parameters": { "respondWith": "json", "responseBody": "={\"success\": false, \"error\": \"Unauthorized\"}", "options": { "responseCode": 401 } } }
+  ],
+  "connections": {
+    "Webhook KB List": { "main": [[{ "node": "Controlla API Key", "type": "main", "index": 0 }]] },
+    "Controlla API Key": { "main": [[{ "node": "Leggi FAQ Supabase", "type": "main", "index": 0 }], [{ "node": "Risposta Non Autorizzato", "type": "main", "index": 0 }]] },
+    "Leggi FAQ Supabase": { "main": [[{ "node": "Formatta Risposta FAQ", "type": "main", "index": 0 }]] },
+    "Formatta Risposta FAQ": { "main": [[{ "node": "Risposta FAQ", "type": "main", "index": 0 }]] }
+  },
+  "settings": { "executionOrder": "v1" }
+}

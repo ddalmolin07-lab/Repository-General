@@ -1,0 +1,18 @@
+{
+  "id": "TwHwzY1b4dqUiknK",
+  "name": "KB - Modifica FAQ - Webhook_supabase",
+  "active": false,
+  "nodes": [
+    { "id": "node-webhook", "name": "Webhook KB Update", "type": "n8n-nodes-base.webhook", "typeVersion": 2.1, "position": [240, 300], "parameters": { "httpMethod": "PUT", "path": "kb/update", "responseMode": "responseNode" }, "onError": "continueRegularOutput" },
+    { "id": "node-if", "name": "Controlla API Key", "type": "n8n-nodes-base.if", "typeVersion": 2, "position": [460, 300], "parameters": { "conditions": { "options": { "caseSensitive": true, "leftValue": "", "typeValidation": "strict" }, "conditions": [{ "id": "cond-1", "leftValue": "={{ $json.headers[\"x-api-key\"] }}", "rightValue": "fk-kb-api-2026", "operator": { "type": "string", "operation": "equals" } }], "combinator": "and" } } },
+    { "id": "node-supabase-update", "name": "Aggiorna FAQ Supabase", "type": "n8n-nodes-base.supabase", "typeVersion": 1, "position": [700, 200], "parameters": { "resource": "row", "operation": "update", "tableId": "kb_faq", "filterType": "manual", "matchType": "allFilters", "filters": { "conditions": [{ "keyName": "id", "condition": "eq", "keyValue": "={{ $json.body.id }}" }] }, "dataToSend": "defineBelow", "fieldsUi": { "fieldValues": [{ "fieldId": "domanda", "fieldValue": "={{ $json.body.domanda }}" }, { "fieldId": "risposta", "fieldValue": "={{ $json.body.risposta }}" }, { "fieldId": "updated_at", "fieldValue": "={{ $now.toISO() }}" }] } }, "credentials": { "supabaseApi": { "id": "6exE1PGVlPWOLmzf", "name": "Supabase account" } } },
+    { "id": "node-respond-ok", "name": "Risposta Modifica OK", "type": "n8n-nodes-base.respondToWebhook", "typeVersion": 1.1, "position": [940, 200], "parameters": { "respondWith": "json", "responseBody": "={\"success\": true, \"message\": \"FAQ aggiornata con successo\"}" } },
+    { "id": "node-respond-unauth", "name": "Risposta Non Autorizzato", "type": "n8n-nodes-base.respondToWebhook", "typeVersion": 1.1, "position": [700, 400], "parameters": { "respondWith": "json", "responseBody": "={\"success\": false, \"error\": \"Unauthorized\"}", "options": { "responseCode": 401 } } }
+  ],
+  "connections": {
+    "Webhook KB Update": { "main": [[{ "node": "Controlla API Key", "type": "main", "index": 0 }]] },
+    "Controlla API Key": { "main": [[{ "node": "Aggiorna FAQ Supabase", "type": "main", "index": 0 }], [{ "node": "Risposta Non Autorizzato", "type": "main", "index": 0 }]] },
+    "Aggiorna FAQ Supabase": { "main": [[{ "node": "Risposta Modifica OK", "type": "main", "index": 0 }]] }
+  },
+  "settings": { "executionOrder": "v1" }
+}

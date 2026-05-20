@@ -1,0 +1,18 @@
+{
+  "id": "XVx8FYzSop9jRFkR",
+  "name": "KB - Aggiungi FAQ - Webhook_supabase",
+  "active": false,
+  "nodes": [
+    { "id": "node-webhook", "name": "Webhook KB Add", "type": "n8n-nodes-base.webhook", "typeVersion": 2.1, "position": [240, 300], "parameters": { "httpMethod": "POST", "path": "kb/add", "responseMode": "responseNode" }, "onError": "continueRegularOutput" },
+    { "id": "node-if", "name": "Controlla API Key", "type": "n8n-nodes-base.if", "typeVersion": 2, "position": [460, 300], "parameters": { "conditions": { "options": { "caseSensitive": true, "leftValue": "", "typeValidation": "strict" }, "conditions": [{ "id": "cond-1", "leftValue": "={{ $json.headers[\"x-api-key\"] }}", "rightValue": "fk-kb-api-2026", "operator": { "type": "string", "operation": "equals" } }], "combinator": "and" } } },
+    { "id": "node-supabase-insert", "name": "Aggiungi FAQ Supabase", "type": "n8n-nodes-base.supabase", "typeVersion": 1, "position": [700, 200], "parameters": { "resource": "row", "operation": "create", "tableId": "kb_faq", "dataToSend": "defineBelow", "fieldsUi": { "fieldValues": [{ "fieldId": "domanda", "fieldValue": "={{ $json.body.domanda }}" }, { "fieldId": "risposta", "fieldValue": "={{ $json.body.risposta }}" }] } }, "credentials": { "supabaseApi": { "id": "6exE1PGVlPWOLmzf", "name": "Supabase account" } } },
+    { "id": "node-respond-ok", "name": "Risposta Aggiunta OK", "type": "n8n-nodes-base.respondToWebhook", "typeVersion": 1.1, "position": [940, 200], "parameters": { "respondWith": "json", "responseBody": "={\"success\": true, \"message\": \"FAQ aggiunta con successo\", \"id\": \"{{ $json.id }}\"}" } },
+    { "id": "node-respond-unauth", "name": "Risposta Non Autorizzato", "type": "n8n-nodes-base.respondToWebhook", "typeVersion": 1.1, "position": [700, 400], "parameters": { "respondWith": "json", "responseBody": "={\"success\": false, \"error\": \"Unauthorized\"}", "options": { "responseCode": 401 } } }
+  ],
+  "connections": {
+    "Webhook KB Add": { "main": [[{ "node": "Controlla API Key", "type": "main", "index": 0 }]] },
+    "Controlla API Key": { "main": [[{ "node": "Aggiungi FAQ Supabase", "type": "main", "index": 0 }], [{ "node": "Risposta Non Autorizzato", "type": "main", "index": 0 }]] },
+    "Aggiungi FAQ Supabase": { "main": [[{ "node": "Risposta Aggiunta OK", "type": "main", "index": 0 }]] }
+  },
+  "settings": { "executionOrder": "v1" }
+}
