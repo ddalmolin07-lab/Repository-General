@@ -14,7 +14,7 @@ function relativeTime(iso) {
 }
 
 export default function EscalationCard({ request, selected, onClick }) {
-  const isLavorazione = request.stato === 'in_lavorazione'
+  const isLavorazione = request.stato === 'presa_in_carico'
   const variant = isLavorazione ? 'lavorazione' : 'urgente'
   const cls = ['esc-item', variant, selected ? 'selected' : ''].filter(Boolean).join(' ')
 
@@ -30,9 +30,6 @@ export default function EscalationCard({ request, selected, onClick }) {
           <span className="esc-dot"></span>
           {isLavorazione ? 'In lavorazione' : 'In attesa'}
         </span>
-        {request.secondo_contatto && (
-          <span className="secondo-badge">2° contatto</span>
-        )}
       </div>
     </div>
   )

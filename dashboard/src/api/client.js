@@ -1,33 +1,31 @@
 import { supabase } from '../lib/supabase'
 
-// Escalation attive (escalated + non risolte)
+// Escalation attive (in attesa o prese in carico dall'addetto)
 export async function getRequests() {
   const { data, error } = await supabase
     .from('email_requests')
     .select('*')
-    .eq('tipo', 'escalated')
-    .neq('stato', 'risolto')
+    .in('stato', ['in_attesa_addetto', 'presa_in_carico'])
     .order('timestamp_arrivo', { ascending: false })
   if (error) throw error
   return data ?? []
 }
 
-// Aggiorna solo lo stato (e timestamp_risolto se risolto)
-export async function patchStatus({ id, stato }) {
-  const update = { stato }
-  if (stato === 'risolto') update.timestamp_risolto = new Date().toISOString()
-  const { data, error } = await supabase
-    .from('email_requests')
-    .update(update)
-    .eq('id', id)
-    .select()
-    .single()
+// Claim atomico via Postgres function: solo se in stato 'in_attesa_addetto'
+// passa a 'presa_in_carico'. Ritorna la riga aggiornata, oppure null se il
+// claim non è andato a buon fine (race: già preso in carico o non eleggibile).
+export async function claimRequest(id) {
+  const { data, error } = await supabase.rpc('claim_request', { p_id: id })
   if (error) throw error
-  return data
+  const row = Array.isArray(data) ? data[0] : data
+  return row ?? null
 }
 
-// Invia risposta via n8n (Gmail) — l'unica chiamata che resta su n8n
-export async function postReply({ id, mittente_email, oggetto_email, testo_risposta }) {
+// Invia risposta via n8n. Il workflow è single-writer: legge mittente/oggetto
+// dal DB, invia la Gmail e fa l'UPDATE atomico (stato='risolta_addetto').
+// Payload minimo: {id, testo_risposta}.
+// Response: { ok: true } | { already_sent: true } per re-invii idempotenti.
+export async function postReply({ id, testo_risposta }) {
   const BASE = import.meta.env.VITE_N8N_BASE_URL
   const KEY = import.meta.env.VITE_KB_API_KEY
   const res = await fetch(`${BASE}/webhook/dashboard/reply`, {
@@ -36,28 +34,18 @@ export async function postReply({ id, mittente_email, oggetto_email, testo_rispo
       'Content-Type': 'application/json',
       'X-API-Key': KEY,
     },
-    body: JSON.stringify({ id, mittente_email, oggetto_email, testo_risposta }),
+    body: JSON.stringify({ id, testo_risposta }),
   })
   if (!res.ok) throw new Error(`Reply webhook failed: ${res.status}`)
-  // Aggiorna localmente lo stato a risolto + risposta_inviata
-  await supabase
-    .from('email_requests')
-    .update({
-      stato: 'risolto',
-      timestamp_risolto: new Date().toISOString(),
-      risposta_inviata: testo_risposta,
-    })
-    .eq('id', id)
   return res.json().catch(() => ({}))
 }
 
 // Storico (tutte le richieste, con filtri opzionali)
-export async function getHistory({ tipo, stato, search } = {}) {
+export async function getHistory({ stato, search } = {}) {
   let q = supabase
     .from('email_requests')
     .select('*')
     .order('timestamp_arrivo', { ascending: false })
-  if (tipo) q = q.eq('tipo', tipo)
   if (stato) q = q.eq('stato', stato)
   if (search) {
     q = q.or(`mittente_email.ilike.%${search}%,oggetto_email.ilike.%${search}%`)

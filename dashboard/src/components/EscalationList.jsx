@@ -1,9 +1,9 @@
 import EscalationCard from './EscalationCard'
 
 const FILTERS = [
-  { key: 'all',            label: 'Tutti' },
-  { key: 'in_attesa',      label: 'In attesa' },
-  { key: 'in_lavorazione', label: 'In lavorazione' },
+  { key: 'all',                 label: 'Tutti' },
+  { key: 'in_attesa_addetto',   label: 'In attesa' },
+  { key: 'presa_in_carico',     label: 'In lavorazione' },
 ]
 
 export default function EscalationList({

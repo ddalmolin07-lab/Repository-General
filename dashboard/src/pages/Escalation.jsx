@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from 'react'
 import EscalationList from '../components/EscalationList'
 import EscalationDetail from '../components/EscalationDetail'
-import { getRequests, patchStatus, postReply } from '../api/client'
+import { getRequests, claimRequest, postReply } from '../api/client'
 
 export default function Escalation() {
   const [requests, setRequests] = useState([])
@@ -36,8 +36,8 @@ export default function Escalation() {
   const filtered = useMemo(() => {
     const q = search.trim().toLowerCase()
     return requests.filter((r) => {
-      if (filter === 'in_attesa' && r.stato !== 'in_attesa') return false
-      if (filter === 'in_lavorazione' && r.stato !== 'in_lavorazione') return false
+      if (filter === 'in_attesa_addetto' && r.stato !== 'in_attesa_addetto') return false
+      if (filter === 'presa_in_carico' && r.stato !== 'presa_in_carico') return false
       if (!q) return true
       return (
         r.mittente_email?.toLowerCase().includes(q) ||
@@ -51,14 +51,17 @@ export default function Escalation() {
     [requests, selectedId]
   )
 
-  async function handleChangeStatus(stato) {
+  async function handleClaim() {
     if (!selected) return
     setBusy(true)
     try {
-      await patchStatus({ id: selected.id, stato })
-      await load(stato !== 'risolto')
+      const row = await claimRequest(selected.id)
+      if (!row) {
+        setError('Richiesta già presa in carico da un altro addetto')
+      }
+      await load(true)
     } catch (e) {
-      setError(e.message ?? 'Errore aggiornamento stato')
+      setError(e.message ?? 'Errore presa in carico')
     } finally {
       setBusy(false)
     }
@@ -68,12 +71,10 @@ export default function Escalation() {
     if (!selected) return
     setBusy(true)
     try {
-      await postReply({
-        id: selected.id,
-        mittente_email: selected.mittente_email,
-        oggetto_email: selected.oggetto_email,
-        testo_risposta: text,
-      })
+      const result = await postReply({ id: selected.id, testo_risposta: text })
+      if (result?.already_sent) {
+        setError('Risposta già inviata in precedenza')
+      }
       await load(false)
     } catch (e) {
       setError(e.message ?? 'Errore invio risposta')
@@ -96,7 +97,7 @@ export default function Escalation() {
       />
       <EscalationDetail
         request={selected}
-        onChangeStatus={handleChangeStatus}
+        onClaim={handleClaim}
         onSendReply={handleSendReply}
         busy={busy}
       />

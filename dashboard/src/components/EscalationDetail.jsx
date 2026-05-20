@@ -11,7 +11,7 @@ function formatDate(iso) {
   })
 }
 
-export default function EscalationDetail({ request, onChangeStatus, onSendReply, busy }) {
+export default function EscalationDetail({ request, onClaim, onSendReply, busy }) {
   const [reply, setReply] = useState('')
   const [focused, setFocused] = useState(false)
 
@@ -28,7 +28,7 @@ export default function EscalationDetail({ request, onChangeStatus, onSendReply,
     )
   }
 
-  const isLavorazione = request.stato === 'in_lavorazione'
+  const isLavorazione = request.stato === 'presa_in_carico'
   const canSend = reply.trim().length > 0 && !busy
 
   return (
@@ -40,12 +40,6 @@ export default function EscalationDetail({ request, onChangeStatus, onSendReply,
             <span>{request.mittente_email}</span>
             <span>·</span>
             <span>{formatDate(request.timestamp_arrivo)}</span>
-            {request.secondo_contatto && (
-              <>
-                <span>·</span>
-                <span className="secondo-badge">2° contatto</span>
-              </>
-            )}
           </div>
         </div>
         <div className="detail-actions">
@@ -53,18 +47,11 @@ export default function EscalationDetail({ request, onChangeStatus, onSendReply,
             <button
               className="btn status"
               disabled={busy}
-              onClick={() => onChangeStatus('in_lavorazione')}
+              onClick={() => onClaim()}
             >
-              → In lavorazione
+              → Prendi in carico
             </button>
           )}
-          <button
-            className="btn"
-            disabled={busy}
-            onClick={() => onChangeStatus('risolto')}
-          >
-            ✓ Segna risolto
-          </button>
         </div>
       </div>
 
