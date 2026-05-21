@@ -55,3 +55,4 @@ Screenshot*.png
 # ── Claude project settings (local) ──
 .claude/settings.local.json
 .claude/skills/
+.claude/scheduled_tasks.lock
