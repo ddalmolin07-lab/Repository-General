@@ -3,6 +3,7 @@ import { NavLink } from 'react-router-dom'
 const NAV_ITEMS = [
   { label: 'Escalation',   to: '/',             icon: '⚡' },
   { label: 'Storico',      to: '/storico',      icon: '📋' },
+  { label: 'KB',           to: '/kb',           icon: '📚' },
   { label: 'Analytics',    to: '/analytics',    icon: '📊' },
   { label: 'Impostazioni', to: '/impostazioni', icon: '⚙️' },
 ]
