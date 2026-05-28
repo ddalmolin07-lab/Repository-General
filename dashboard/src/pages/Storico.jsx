@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from 'react'
 import { getHistory } from '../api/client'
+import DateRangePicker from '../components/DateRangePicker'
 
 const TIPO_FILTERS = [
   { key: 'all', label: 'Tutti' },
@@ -102,12 +103,11 @@ export default function Storico() {
               </button>
             ))}
           </div>
-          <div className="storico-dates">
-            <span className="storico-date-label">Dal</span>
-            <input type="date" className="storico-date-input" value={from} onChange={(e) => setFrom(e.target.value)} />
-            <span className="storico-date-label">al</span>
-            <input type="date" className="storico-date-input" value={to} onChange={(e) => setTo(e.target.value)} />
-          </div>
+          <DateRangePicker
+            from={from}
+            to={to}
+            onChange={({ from: f, to: t }) => { setFrom(f); setTo(t) }}
+          />
           <span className="storico-count"><strong>{filtered.length}</strong> richieste</span>
         </div>
       </div>

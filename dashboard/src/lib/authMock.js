@@ -3,25 +3,31 @@
 import { supabase } from './supabase'
 
 let currentSession = null
+let authReady = false
 const subscribers = new Set()
 
 function notify() {
-  for (const cb of subscribers) cb(!!currentSession)
+  for (const cb of subscribers) cb({ ready: authReady, authed: !!currentSession })
 }
 
-// Boot: prendi la sessione persistita (sync da localStorage interno a supabase-js)
 supabase.auth.getSession().then(({ data }) => {
   currentSession = data.session ?? null
+  authReady = true
   notify()
 })
 
 supabase.auth.onAuthStateChange((_event, session) => {
   currentSession = session ?? null
+  authReady = true
   notify()
 })
 
 export function isAuthenticated() {
   return !!currentSession
+}
+
+export function isAuthReady() {
+  return authReady
 }
 
 export function getCurrentUser() {

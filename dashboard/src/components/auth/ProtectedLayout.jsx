@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react'
 import { Navigate, Outlet, useLocation } from 'react-router-dom'
 import KpiBar from '../KpiBar'
 import Sidebar from '../Sidebar'
-import { isAuthenticated, onAuthChange, signOut } from '../../lib/authMock'
+import { isAuthenticated, isAuthReady, onAuthChange, signOut } from '../../lib/authMock'
 
 const KPI_PLACEHOLDERS = [
   { label: 'In attesa',      value: '--', dotColor: 'var(--status-waiting)'  },
@@ -13,11 +13,15 @@ const KPI_PLACEHOLDERS = [
 
 export default function ProtectedLayout() {
   const location = useLocation()
-  const [authed, setAuthed] = useState(isAuthenticated())
+  const [authState, setAuthState] = useState({ ready: isAuthReady(), authed: isAuthenticated() })
 
-  useEffect(() => onAuthChange(setAuthed), [])
+  useEffect(() => onAuthChange(setAuthState), [])
 
-  if (!authed) {
+  if (!authState.ready) {
+    return <div style={{ height: '100vh', background: 'var(--bg, #0b0b0c)' }} />
+  }
+
+  if (!authState.authed) {
     return <Navigate to="/login" replace state={{ from: location.pathname }} />
   }
 
