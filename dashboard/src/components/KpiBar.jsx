@@ -7,7 +7,7 @@ export default function KpiBar({ kpis = [] }) {
       <span
         style={{ fontSize: '15px', fontWeight: 800, letterSpacing: '-0.5px', color: 'var(--text)', whiteSpace: 'nowrap' }}
       >
-        Filtro K
+        FiltroCappa
       </span>
 
       <div

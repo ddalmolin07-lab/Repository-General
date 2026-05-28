@@ -45,7 +45,7 @@ export default function SignUp() {
         <span className="auth-eyebrow"><span className="auth-eyebrow-dot" /> Nuovo account</span>
 
         <div>
-          <h1 className="auth-title">Inizia con Filtro K.</h1>
+          <h1 className="auth-title">Inizia con FiltroCappa.</h1>
           <p className="auth-subtitle">Crea il tuo account in 30 secondi. Nessuna carta richiesta.</p>
         </div>
 
@@ -95,7 +95,7 @@ export default function SignUp() {
               style={{ marginTop: 2 }}
             />
             <span style={{ fontSize: 12 }}>
-              Accetto i <a href="#termini" className="auth-link">Termini</a> e l'<a href="#privacy" className="auth-link">Informativa Privacy</a> di Filtro K.
+              Accetto i <a href="#termini" className="auth-link">Termini</a> e l'<a href="#privacy" className="auth-link">Informativa Privacy</a> di FiltroCappa.
             </span>
           </label>
           {errors.accept && <div className="auth-error-msg">{errors.accept}</div>}

@@ -4,7 +4,7 @@ import KpiBar from '../components/KpiBar'
 describe('KpiBar', () => {
   it('renders the logo', () => {
     render(<KpiBar kpis={[]} />)
-    expect(screen.getByText('Filtro K')).toBeInTheDocument()
+    expect(screen.getByText('FiltroCappa')).toBeInTheDocument()
   })
 
   it('renders 4 KPI pills with their labels', () => {

@@ -42,7 +42,7 @@ export default function SignIn() {
 
         <div>
           <h1 className="auth-title">Bentornato.</h1>
-          <p className="auth-subtitle">Accedi al tuo spazio Filtro K per gestire le escalation in arrivo.</p>
+          <p className="auth-subtitle">Accedi al tuo spazio FiltroCappa per gestire le escalation in arrivo.</p>
         </div>
 
         <div className="auth-form">

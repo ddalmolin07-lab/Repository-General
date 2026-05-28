@@ -1,11 +1,12 @@
 import { NavLink } from 'react-router-dom'
+import { Inbox, History, BookOpen, BarChart3, Settings } from 'lucide-react'
 
 const NAV_ITEMS = [
-  { label: 'Escalation',   to: '/',             icon: '⚡' },
-  { label: 'Storico',      to: '/storico',      icon: '📋' },
-  { label: 'KB',           to: '/kb',           icon: '📚' },
-  { label: 'Analytics',    to: '/analytics',    icon: '📊' },
-  { label: 'Impostazioni', to: '/impostazioni', icon: '⚙️' },
+  { label: 'Escalation',   to: '/',             Icon: Inbox },
+  { label: 'Storico',      to: '/storico',      Icon: History },
+  { label: 'KB',           to: '/kb',           Icon: BookOpen },
+  { label: 'Analytics',    to: '/analytics',    Icon: BarChart3 },
+  { label: 'Impostazioni', to: '/impostazioni', Icon: Settings },
 ]
 
 export default function Sidebar({ pendingCount = 0 }) {
@@ -14,18 +15,21 @@ export default function Sidebar({ pendingCount = 0 }) {
       className="flex flex-col gap-1 py-3 px-2 flex-shrink-0"
       style={{ width: '196px' }}
     >
-      {NAV_ITEMS.map((item) => (
+      {NAV_ITEMS.map(({ label, to, Icon }) => (
         <NavLink
-          key={item.to}
-          to={item.to}
-          end={item.to === '/'}
+          key={to}
+          to={to}
+          end={to === '/'}
           className={({ isActive }) => `nav-item${isActive ? ' active' : ''}`}
         >
-          <span style={{ fontSize: '15px', lineHeight: 1, flexShrink: 0 }}>
-            {item.icon}
-          </span>
-          <span>{item.label}</span>
-          {item.label === 'Escalation' && pendingCount > 0 && (
+          <Icon
+            size={16}
+            strokeWidth={1.75}
+            style={{ flexShrink: 0, color: 'currentColor' }}
+            aria-hidden="true"
+          />
+          <span>{label}</span>
+          {label === 'Escalation' && pendingCount > 0 && (
             <span className="nav-badge" data-testid="escalation-badge">
               {pendingCount}
             </span>

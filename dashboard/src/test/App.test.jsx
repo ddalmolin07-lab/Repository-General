@@ -28,7 +28,7 @@ describe('App routing', () => {
 
   it('renders KpiBar logo on every route', () => {
     renderAt('/storico')
-    expect(screen.getByText('Filtro K')).toBeInTheDocument()
+    expect(screen.getByText('FiltroCappa')).toBeInTheDocument()
   })
 
   it('renders all 4 sidebar nav items on every route', () => {
