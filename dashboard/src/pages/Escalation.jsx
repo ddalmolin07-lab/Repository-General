@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from 'react'
 import EscalationList from '../components/EscalationList'
 import EscalationDetail from '../components/EscalationDetail'
 import { getRequests, claimRequest, postReply } from '../api/client'
+import { getMySettings } from '../api/settings'
 
 export default function Escalation() {
   const [requests, setRequests] = useState([])
@@ -11,6 +12,7 @@ export default function Escalation() {
   const [filter, setFilter] = useState('all')
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState(null)
+  const [signature, setSignature] = useState('')
 
   async function load(preserveSelection = true) {
     setLoading(true)
@@ -30,6 +32,9 @@ export default function Escalation() {
 
   useEffect(() => {
     load(false)
+    getMySettings()
+      .then((s) => setSignature(s.signature || ''))
+      .catch(() => {})
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
@@ -70,8 +75,10 @@ export default function Escalation() {
   async function handleSendReply(text) {
     if (!selected) return
     setBusy(true)
+    const sig = (signature || '').trim()
+    const finalText = sig ? `${text}\n\n${sig}` : text
     try {
-      const result = await postReply({ id: selected.id, testo_risposta: text })
+      const result = await postReply({ id: selected.id, testo_risposta: finalText })
       if (result?.already_sent) {
         setError('Risposta già inviata in precedenza')
       }
@@ -100,6 +107,7 @@ export default function Escalation() {
         onClaim={handleClaim}
         onSendReply={handleSendReply}
         busy={busy}
+        signature={signature}
       />
       {error && (
         <div

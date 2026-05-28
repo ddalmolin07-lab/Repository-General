@@ -11,7 +11,7 @@ function formatDate(iso) {
   })
 }
 
-export default function EscalationDetail({ request, onClaim, onSendReply, busy }) {
+export default function EscalationDetail({ request, onClaim, onSendReply, busy, signature }) {
   const [reply, setReply] = useState('')
   const [focused, setFocused] = useState(false)
 
@@ -79,7 +79,9 @@ export default function EscalationDetail({ request, onClaim, onSendReply, busy }
           />
           <div className="reply-footer">
             <span className="reply-hint">
-              La risposta verrà inviata via Gmail e lo stato passerà automaticamente a Risolto
+              {signature
+                ? 'La firma verrà aggiunta in fondo. Invio via Gmail, stato → Risolto.'
+                : 'La risposta verrà inviata via Gmail e lo stato passerà automaticamente a Risolto'}
             </span>
             <button
               className="btn primary"
